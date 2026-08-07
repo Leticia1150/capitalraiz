@@ -1,576 +1,2942 @@
-// =====================================================
-// CAPITAL RAÍZ - CONFIGURACIÓN GENERAL DE SUPABASE
-// =====================================================
-
-// PASO 1:
-// Reemplaza estos dos valores por los de tu proyecto Supabase.
-const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-const SUPABASE_ANON_KEY = "TU-CLAVE-PUBLICA-ANON";
-
-// Conexión
-const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
-
-// =====================================================
-// CONFIGURACIÓN
-// =====================================================
-
-const CR_CONFIG = {
-    bucket: "project-images",
-    tables: {
-        projects: "projects",
-        leads: "leads",
-        analytics: "analytics_events",
-        admins: "admin_users",
-        settings: "site_settings"
-    }
-};
-
-// =====================================================
-// FUNCIONES GENERALES
-// =====================================================
-
-function crMoney(value) {
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0
-    }).format(Number(value || 0));
-}
-
-function crPercent(value) {
-    return Number(value || 0).toFixed(2) + "%";
-}
-
-function crVisitorId() {
-    let id = localStorage.getItem("cr_visitor_id");
-
-    if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem("cr_visitor_id", id);
-    }
-
-    return id;
-}
-
-function crSessionId() {
-    let id = sessionStorage.getItem("cr_session_id");
-
-    if (!id) {
-        id = crypto.randomUUID();
-        sessionStorage.setItem("cr_session_id", id);
-    }
-
-    return id;
-}
-
-function crDevice() {
-    const width = window.innerWidth;
-
-    if (width < 768) return "Móvil";
-    if (width < 1100) return "Tablet";
-
-    return "Computadora";
-}
-
-function crUTM(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
-}
-
-// =====================================================
-// ANALÍTICA
-// =====================================================
-
-async function crTrack(eventName, projectId = null) {
-
-    try {
-
-        await db
-            .from(CR_CONFIG.tables.analytics)
-            .insert({
-                event_name: eventName,
-                project_id: projectId,
-                visitor_id: crVisitorId(),
-                session_id: crSessionId(),
-                page_path: window.location.pathname + window.location.hash,
-                referrer: document.referrer || "Directo",
-                utm_source: crUTM("utm_source"),
-                utm_medium: crUTM("utm_medium"),
-                utm_campaign: crUTM("utm_campaign"),
-                device: crDevice()
-            });
-
-    } catch (error) {
-        console.log("Analytics:", error);
-    }
-}
-
-// =====================================================
-// UTILIDADES
-// =====================================================
-
-function crEscape(text) {
-
-    const div = document.createElement("div");
-
-    div.textContent = text ?? "";
-
-    return div.innerHTML;
-}
-
-function crSlugFile(name) {
-
-    return name
-        .toLowerCase()
-        .replace(/[^a-z0-9.\-_]/g, "-")
-        .replace(/-+/g, "-");
-}
-      <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
+    <meta charset="UTF-8">
 
-<meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Capital Raíz - Marketplace de oportunidades de inversión inmobiliaria."
+    >
 
-<title>Capital Raíz | Marketplace Inmobiliario</title>
+    <title>Capital Raíz | Marketplace Inmobiliario</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="supabase-config.js"></script>
+    <!-- NUESTRA CONFIGURACIÓN -->
+    <script src="supabase-config.js"></script>
 
-<style>
+    <style>
+        :root {
+            --green-dark: #032f2b;
+            --green: #075f50;
+            --green-light: #0b8466;
+            --gold: #c6a44d;
+            --background: #f4f6f5;
+            --white: #ffffff;
+            --text: #18211f;
+            --muted: #707c78;
+            --border: #e0e6e3;
+            --danger: #b44545;
+        }
 
-:root{
-    --green:#023b36;
-    --green2:#056a54;
-    --gold:#c7a94b;
-    --bg:#f5f7f6;
-    --text:#17211f;
-    --muted:#74807c;
-    --white:#ffffff;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-*{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-}
+        html {
+            scroll-behavior: smooth;
+        }
 
-html{
-    scroll-behavior:smooth;
-}
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
 
-body{
-    font-family:Inter,Arial,Helvetica,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-}
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
 
-button,input,textarea{
-    font:inherit;
-}
+        button {
+            cursor: pointer;
+        }
 
-/* HEADER */
+        /* ==============================
+           HEADER
+        ============================== */
 
-.header{
-    background:rgba(2,59,54,.97);
-    color:white;
-    min-height:76px;
+        .header {
+            min-height: 78px;
+            padding: 0 6%;
 
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
 
-    padding:0 6%;
+            background: rgba(3, 47, 43, 0.97);
+            color: white;
 
-    position:sticky;
-    top:0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
 
-    z-index:100;
-}
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
 
-.logo{
-    font-family:Georgia,serif;
-    font-size:27px;
-    letter-spacing:2px;
-}
+        .brand {
+            font-family: Georgia, serif;
+            font-size: 27px;
+            letter-spacing: 2px;
+            color: white;
+            text-decoration: none;
+        }
 
-.logo span{
-    color:var(--gold);
-}
+        .brand span {
+            color: var(--gold);
+        }
 
-nav{
-    display:flex;
-    gap:30px;
-}
+        .nav {
+            display: flex;
+            gap: 28px;
+        }
 
-nav a{
-    color:white;
-    text-decoration:none;
-    font-size:14px;
-}
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: .88;
+        }
 
-/* HERO */
+        .nav a:hover {
+            opacity: 1;
+        }
 
-.hero{
-    min-height:570px;
+        /* ==============================
+           HERO
+        ============================== */
 
-    display:flex;
-    align-items:center;
+        .hero {
+            min-height: 590px;
+            padding: 80px 7%;
 
-    padding:70px 7%;
+            display: flex;
+            align-items: center;
 
-    background:
-        linear-gradient(
-            100deg,
-            rgba(1,43,40,.98),
-            rgba(1,65,55,.85)
+            color: white;
+
+            background:
+                linear-gradient(
+                    105deg,
+                    rgba(3, 47, 43, 1),
+                    rgba(4, 87, 72, .88)
+                );
+
+            position: relative;
+            overflow: hidden;
+
+            background-position: center;
+            background-size: cover;
+        }
+
+        .hero::after {
+            content: "";
+
+            width: 500px;
+            height: 500px;
+
+            position: absolute;
+            right: -180px;
+            top: 50px;
+
+            border: 1px solid rgba(198, 164, 77, .22);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            width: 100%;
+            max-width: 760px;
+
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-kicker {
+            color: #d5bb6a;
+            letter-spacing: 3px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .hero h1 {
+            margin: 18px 0;
+
+            font-family: Georgia, serif;
+            font-size: clamp(45px, 7vw, 72px);
+            line-height: 1.03;
+            font-weight: normal;
+        }
+
+        .hero-description {
+            max-width: 670px;
+
+            font-size: 19px;
+            line-height: 1.75;
+
+            opacity: .9;
+        }
+
+        .primary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            margin-top: 30px;
+            padding: 15px 24px;
+
+            border: 0;
+            border-radius: 8px;
+
+            background: linear-gradient(
+                135deg,
+                #07845f,
+                #0ca473
+            );
+
+            color: white;
+
+            text-decoration: none;
+            font-weight: 700;
+
+            transition: .2s;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ==============================
+           BENEFICIOS
+        ============================== */
+
+        .benefits {
+            max-width: 1350px;
+            margin: -55px auto 0;
+            padding: 0 6%;
+
+            position: relative;
+            z-index: 5;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+
+            background: white;
+
+            border-radius: 14px;
+
+            box-shadow:
+                0 14px 50px rgba(0,0,0,.09);
+
+            overflow: hidden;
+        }
+
+        .benefit {
+            padding: 27px;
+
+            border-right: 1px solid var(--border);
+        }
+
+        .benefit:last-child {
+            border-right: 0;
+        }
+
+        .benefit-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .benefit h3 {
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+
+        .benefit p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           SECTION
+        ============================== */
+
+        .section {
+            max-width: 1450px;
+
+            margin: auto;
+
+            padding: 90px 6%;
+        }
+
+        .section-heading small {
+            color: var(--green-light);
+
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .section-heading h2 {
+            margin-top: 8px;
+
+            font-family: Georgia, serif;
+            font-size: clamp(34px, 5vw, 45px);
+            font-weight: normal;
+        }
+
+        .section-heading p {
+            margin-top: 12px;
+
+            max-width: 720px;
+
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        /* ==============================
+           FILTROS
+        ============================== */
+
+        .filters {
+            margin: 35px 0;
+
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+
+            gap: 14px;
+        }
+
+        .filters input,
+        .filters select {
+            width: 100%;
+
+            padding: 14px;
+
+            border: 1px solid var(--border);
+            border-radius: 9px;
+
+            background: white;
+        }
+
+        /* ==============================
+           PROJECT CARDS
+        ============================== */
+
+        .projects-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(auto-fit, minmax(290px, 1fr));
+
+            gap: 25px;
+        }
+
+        .project-card {
+            background: white;
+
+            border-radius: 16px;
+
+            overflow: hidden;
+
+            border: 1px solid #e9eeeb;
+
+            transition: .25s;
+
+            box-shadow:
+                0 5px 25px rgba(0,0,0,.05);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+
+            box-shadow:
+                0 17px 40px rgba(0,0,0,.1);
+        }
+
+        .project-image {
+            height: 240px;
+
+            background: #e2e8e5;
+
+            position: relative;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: var(--muted);
+        }
+
+        .project-image img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+        }
+
+        .project-badge {
+            position: absolute;
+
+            left: 15px;
+            top: 15px;
+
+            padding: 7px 11px;
+
+            border-radius: 20px;
+
+            background: rgba(255,255,255,.95);
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .project-content {
+            padding: 22px;
+        }
+
+        .project-city {
+            color: var(--green-light);
+
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .project-content h3 {
+            margin: 8px 0 10px;
+
+            font-family: Georgia, serif;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        .project-description {
+            color: var(--muted);
+
+            line-height: 1.6;
+            font-size: 14px;
+
+            min-height: 45px;
+        }
+
+        .project-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            gap: 9px;
+
+            margin-top: 18px;
+        }
+
+        .project-stat {
+            padding: 12px;
+
+            background: #f7f9f8;
+
+            border: 1px solid #edf1ef;
+            border-radius: 8px;
+        }
+
+        .project-stat small {
+            display: block;
+
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .project-stat strong {
+            display: block;
+
+            margin-top: 4px;
+
+            font-size: 14px;
+        }
+
+        .view-button {
+            width: 100%;
+
+            margin-top: 18px;
+            padding: 13px;
+
+            border: 0;
+            border-radius: 8px;
+
+            background: var(--green-dark);
+            color: white;
+
+            font-weight: 700;
+        }
+
+        /* ==============================
+           EMPTY
+        ============================== */
+
+        .empty-state {
+            grid-column: 1 / -1;
+
+            padding: 80px 25px;
+
+            text-align: center;
+
+            background: white;
+
+            border: 2px dashed #d4ddda;
+            border-radius: 15px;
+        }
+
+        .empty-state h3 {
+            color: var(--green-dark);
+
+            font-family: Georgia, serif;
+            font-size: 26px;
+            font-weight: normal;
+        }
+
+        .empty-state p {
+            margin-top: 10px;
+
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        /* ==============================
+           PROJECT DETAIL
+        ============================== */
+
+        #projectView {
+            display: none;
+        }
+
+        .back-button {
+            margin-bottom: 25px;
+
+            border: 0;
+            background: transparent;
+
+            color: var(--green-light);
+
+            font-weight: 700;
+        }
+
+        .detail-grid {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1.35fr)
+                minmax(330px, .75fr);
+
+            gap: 28px;
+        }
+
+        .detail-main,
+        .detail-side {
+            background: white;
+
+            padding: 26px;
+
+            border-radius: 17px;
+
+            border: 1px solid #e8edeb;
+
+            box-shadow:
+                0 5px 25px rgba(0,0,0,.05);
+        }
+
+        .main-project-image {
+            width: 100%;
+            height: 450px;
+
+            object-fit: cover;
+
+            border-radius: 12px;
+
+            background: #e8ecea;
+        }
+
+        .no-main-image {
+            width: 100%;
+            height: 450px;
+
+            border-radius: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #e8ecea;
+            color: var(--muted);
+        }
+
+        .gallery {
+            display: flex;
+
+            gap: 9px;
+
+            margin-top: 10px;
+
+            overflow-x: auto;
+        }
+
+        .gallery img {
+            width: 95px;
+            height: 72px;
+
+            flex: 0 0 auto;
+
+            object-fit: cover;
+
+            border-radius: 7px;
+
+            cursor: pointer;
+
+            border: 2px solid transparent;
+        }
+
+        .gallery img:hover {
+            border-color: var(--green-light);
+        }
+
+        .detail-city {
+            margin-top: 25px;
+
+            color: var(--green-light);
+
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .detail-title {
+            margin: 8px 0 15px;
+
+            font-family: Georgia, serif;
+            font-size: 38px;
+            font-weight: normal;
+        }
+
+        .detail-description {
+            color: var(--muted);
+
+            line-height: 1.8;
+
+            white-space: pre-line;
+        }
+
+        /* ==============================
+           FINANCE
+        ============================== */
+
+        .detail-side h3 {
+            font-family: Georgia, serif;
+
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        .finance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            gap: 9px;
+
+            margin-top: 20px;
+        }
+
+        .finance-item {
+            padding: 14px;
+
+            background: #f6f8f7;
+
+            border-radius: 8px;
+        }
+
+        .finance-item small {
+            display: block;
+
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .finance-item strong {
+            display: block;
+
+            margin-top: 5px;
+
+            color: var(--green-dark);
+        }
+
+        .progress-label {
+            margin-top: 20px;
+
+            display: flex;
+            justify-content: space-between;
+
+            font-size: 12px;
+        }
+
+        .progress-track {
+            height: 9px;
+
+            margin-top: 8px;
+
+            background: #e1e7e4;
+
+            border-radius: 20px;
+
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+
+            background: var(--green-light);
+
+            transition: width .3s;
+        }
+
+        /* ==============================
+           SIMULATOR
+        ============================== */
+
+        .simulator {
+            margin-top: 24px;
+            padding: 20px;
+
+            background: #f5f8f6;
+
+            border-radius: 11px;
+        }
+
+        .simulator h3 {
+            margin-bottom: 16px;
+        }
+
+        .field-label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            color: #5d6965;
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .amount-input {
+            width: 100%;
+
+            padding: 13px;
+
+            border: 1px solid #cfd8d4;
+            border-radius: 7px;
+
+            background: white;
+        }
+
+        .simulation-help {
+            margin-top: 7px;
+
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .simulation-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            gap: 8px;
+
+            margin-top: 13px;
+        }
+
+        .simulation-result {
+            padding: 12px;
+
+            background: white;
+
+            border-radius: 7px;
+
+            border: 1px solid #edf1ef;
+        }
+
+        .simulation-result small {
+            display: block;
+
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .simulation-result strong {
+            display: block;
+
+            margin-top: 5px;
+
+            color: var(--green-light);
+        }
+
+        /* ==============================
+           LEAD FORM
+        ============================== */
+
+        .lead-form {
+            margin-top: 26px;
+        }
+
+        .lead-form h3 {
+            margin-bottom: 15px;
+        }
+
+        .lead-form input,
+        .lead-form textarea {
+            width: 100%;
+
+            padding: 12px;
+
+            margin-bottom: 9px;
+
+            border: 1px solid #d7dfdb;
+            border-radius: 7px;
+
+            background: white;
+        }
+
+        .lead-form textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .lead-submit {
+            width: 100%;
+
+            padding: 13px;
+
+            border: 0;
+            border-radius: 8px;
+
+            background: var(--green-light);
+            color: white;
+
+            font-weight: 700;
+        }
+
+        .lead-submit:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        /* ==============================
+           FOOTER
+        ============================== */
+
+        .footer {
+            margin-top: 60px;
+            padding: 50px 6%;
+
+            background: var(--green-dark);
+
+            color: white;
+        }
+
+        .footer-inner {
+            max-width: 1350px;
+            margin: auto;
+        }
+
+        .footer-brand {
+            font-family: Georgia, serif;
+            font-size: 22px;
+        }
+
+        .footer p {
+            margin-top: 10px;
+
+            color: rgba(255,255,255,.65);
+
+            line-height: 1.7;
+        }
+
+        /* ==============================
+           TOAST
+        ============================== */
+
+        .toast {
+            position: fixed;
+
+            right: 25px;
+            bottom: 25px;
+
+            max-width: 360px;
+
+            padding: 14px 19px;
+
+            background: #153e37;
+            color: white;
+
+            border-radius: 8px;
+
+            z-index: 3000;
+
+            display: none;
+
+            box-shadow:
+                0 10px 30px rgba(0,0,0,.2);
+        }
+
+        /* ==============================
+           RESPONSIVE
+        ============================== */
+
+        @media(max-width: 950px) {
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benefit {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .benefit:last-child {
+                border-bottom: 0;
+            }
+        }
+
+        @media(max-width: 700px) {
+
+            .nav {
+                display: none;
+            }
+
+            .hero {
+                min-height: 520px;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .benefits {
+                margin-top: -25px;
+            }
+
+            .main-project-image,
+            .no-main-image {
+                height: 300px;
+            }
+
+            .finance-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media(max-width: 450px) {
+
+            .finance-grid,
+            .simulation-results,
+            .project-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==========================================
+         HEADER
+    =========================================== -->
+
+    <header class="header">
+
+        <a
+            href="#inicio"
+            class="brand"
+            id="brand"
+        >
+            CAPITAL <span>RAÍZ</span>
+        </a>
+
+        <nav class="nav">
+
+            <a href="#inicio">
+                Inicio
+            </a>
+
+            <a href="#oportunidades">
+                Oportunidades
+            </a>
+
+            <a href="#nosotros">
+                Nosotros
+            </a>
+
+        </nav>
+
+    </header>
+
+
+    <!-- ==========================================
+         HOME VIEW
+    =========================================== -->
+
+    <main id="homeView">
+
+        <!-- HERO -->
+
+        <section
+            class="hero"
+            id="inicio"
+        >
+
+            <div class="hero-content">
+
+                <div
+                    class="hero-kicker"
+                    id="heroKicker"
+                >
+                    INVERSIÓN INMOBILIARIA
+                </div>
+
+                <h1 id="heroTitle">
+                    Capital Raíz
+                </h1>
+
+                <p
+                    class="hero-description"
+                    id="heroSubtitle"
+                >
+                    Explora oportunidades inmobiliarias
+                    seleccionadas para construir patrimonio.
+                </p>
+
+                <a
+                    class="primary-button"
+                    href="#oportunidades"
+                >
+                    Ver oportunidades →
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- BENEFICIOS -->
+
+        <section class="benefits">
+
+            <div class="benefits-grid">
+
+                <article class="benefit">
+
+                    <div class="benefit-icon">
+                        ◈
+                    </div>
+
+                    <h3>
+                        Proyectos analizados
+                    </h3>
+
+                    <p>
+                        Información organizada para evaluar
+                        cada oportunidad.
+                    </p>
+
+                </article>
+
+                <article class="benefit">
+
+                    <div class="benefit-icon">
+                        ◉
+                    </div>
+
+                    <h3>
+                        Información transparente
+                    </h3>
+
+                    <p>
+                        Conoce montos, plazos, avance y
+                        rentabilidad proyectada.
+                    </p>
+
+                </article>
+
+                <article class="benefit">
+
+                    <div class="benefit-icon">
+                        ◇
+                    </div>
+
+                    <h3>
+                        Simulación inmediata
+                    </h3>
+
+                    <p>
+                        Analiza diferentes montos antes
+                        de solicitar información.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- MARKETPLACE -->
+
+        <section
+            class="section"
+            id="oportunidades"
+        >
+
+            <div class="section-heading">
+
+                <small>
+                    MARKETPLACE
+                </small>
+
+                <h2>
+                    Oportunidades disponibles
+                </h2>
+
+                <p>
+                    Esta sección se alimenta directamente
+                    con los proyectos publicados desde
+                    el administrador de Capital Raíz.
+                </p>
+
+            </div>
+
+            <div class="filters">
+
+                <input
+                    type="search"
+                    id="searchInput"
+                    placeholder="Buscar por proyecto o ciudad..."
+                >
+
+                <select id="categoryFilter">
+
+                    <option value="">
+                        Todas las categorías
+                    </option>
+
+                    <option value="Residencial">
+                        Residencial
+                    </option>
+
+                    <option value="Comercial">
+                        Comercial
+                    </option>
+
+                    <option value="Terreno">
+                        Terreno
+                    </option>
+
+                    <option value="Mixto">
+                        Mixto
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                class="projects-grid"
+                id="projectsGrid"
+            >
+
+                <div class="empty-state">
+
+                    <h3>
+                        Cargando oportunidades...
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==========================================
+         PROJECT VIEW
+    =========================================== -->
+
+    <section
+        class="section"
+        id="projectView"
+    >
+
+        <button
+            class="back-button"
+            id="backButton"
+            type="button"
+        >
+            ← Volver a oportunidades
+        </button>
+
+
+        <div class="detail-grid">
+
+            <!-- IZQUIERDA -->
+
+            <article class="detail-main">
+
+                <div id="mainImageHolder"></div>
+
+                <div
+                    class="gallery"
+                    id="gallery"
+                ></div>
+
+                <div
+                    class="detail-city"
+                    id="detailCity"
+                ></div>
+
+                <h1
+                    class="detail-title"
+                    id="detailTitle"
+                ></h1>
+
+                <p
+                    class="detail-description"
+                    id="detailDescription"
+                ></p>
+
+            </article>
+
+
+            <!-- DERECHA -->
+
+            <aside class="detail-side">
+
+                <h3>
+                    Ficha del proyecto
+                </h3>
+
+                <div class="finance-grid">
+
+                    <div class="finance-item">
+
+                        <small>
+                            Inversión total
+                        </small>
+
+                        <strong id="detailInvestment">
+                            $0
+                        </strong>
+
+                    </div>
+
+                    <div class="finance-item">
+
+                        <small>
+                            Venta proyectada
+                        </small>
+
+                        <strong id="detailSale">
+                            $0
+                        </strong>
+
+                    </div>
+
+                    <div class="finance-item">
+
+                        <small>
+                            Capital captado
+                        </small>
+
+                        <strong id="detailRaised">
+                            $0
+                        </strong>
+
+                    </div>
+
+                    <div class="finance-item">
+
+                        <small>
+                            Capital disponible
+                        </small>
+
+                        <strong id="detailAvailable">
+                            $0
+                        </strong>
+
+                    </div>
+
+                    <div class="finance-item">
+
+                        <small>
+                            Rentabilidad proyectada
+                        </small>
+
+                        <strong id="detailReturn">
+                            0%
+                        </strong>
+
+                    </div>
+
+                    <div class="finance-item">
+
+                        <small>
+                            Plazo estimado
+                        </small>
+
+                        <strong id="detailTerm">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="progress-label">
+
+                    <span>
+                        Avance del proyecto
+                    </span>
+
+                    <strong id="detailProgress">
+                        0%
+                    </strong>
+
+                </div>
+
+                <div class="progress-track">
+
+                    <div
+                        class="progress-bar"
+                        id="detailProgressBar"
+                    ></div>
+
+                </div>
+
+
+                <!-- SIMULADOR -->
+
+                <section class="simulator">
+
+                    <h3>
+                        Simulador de inversión
+                    </h3>
+
+                    <label
+                        for="investmentAmount"
+                        class="field-label"
+                    >
+                        ¿Cuánto deseas invertir?
+                    </label>
+
+                    <input
+                        class="amount-input"
+                        id="investmentAmount"
+                        type="number"
+                        min="0"
+                        step="100"
+                    >
+
+                    <div
+                        class="simulation-help"
+                        id="simulationHelp"
+                    ></div>
+
+                    <div class="simulation-results">
+
+                        <div class="simulation-result">
+
+                            <small>
+                                Participación estimada
+                            </small>
+
+                            <strong id="calcParticipation">
+                                0%
+                            </strong>
+
+                        </div>
+
+                        <div class="simulation-result">
+
+                            <small>
+                                Utilidad proyectada
+                            </small>
+
+                            <strong id="calcProfit">
+                                $0
+                            </strong>
+
+                        </div>
+
+                        <div class="simulation-result">
+
+                            <small>
+                                Capital + utilidad
+                            </small>
+
+                            <strong id="calcTotal">
+                                $0
+                            </strong>
+
+                        </div>
+
+                        <div class="simulation-result">
+
+                            <small>
+                                Plazo
+                            </small>
+
+                            <strong id="calcTerm">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- LEAD -->
+
+                <form
+                    class="lead-form"
+                    id="leadForm"
+                >
+
+                    <h3>
+                        Solicitar información
+                    </h3>
+
+                    <input
+                        id="leadName"
+                        type="text"
+                        required
+                        maxlength="120"
+                        placeholder="Nombre completo"
+                    >
+
+                    <input
+                        id="leadEmail"
+                        type="email"
+                        required
+                        maxlength="180"
+                        placeholder="Correo electrónico"
+                    >
+
+                    <input
+                        id="leadPhone"
+                        type="tel"
+                        maxlength="40"
+                        placeholder="Teléfono"
+                    >
+
+                    <textarea
+                        id="leadMessage"
+                        maxlength="1000"
+                        placeholder="Mensaje o consulta"
+                    ></textarea>
+
+                    <button
+                        class="lead-submit"
+                        id="leadSubmit"
+                        type="submit"
+                    >
+                        Enviar solicitud
+                    </button>
+
+                </form>
+
+            </aside>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==========================================
+         FOOTER
+    =========================================== -->
+
+    <footer
+        class="footer"
+        id="nosotros"
+    >
+
+        <div class="footer-inner">
+
+            <div class="footer-brand">
+                CAPITAL RAÍZ
+            </div>
+
+            <p id="footerText">
+                Marketplace de inversión inmobiliaria.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <div
+        class="toast"
+        id="toast"
+        role="status"
+        aria-live="polite"
+    ></div>
+
+
+    <!-- ==========================================
+         JAVASCRIPT
+    =========================================== -->
+
+    <script>
+
+        let allProjects = [];
+        let currentProject = null;
+
+
+        /* ==========================================
+           ELEMENTOS
+        =========================================== */
+
+        const homeView =
+            document.getElementById("homeView");
+
+        const projectView =
+            document.getElementById("projectView");
+
+        const projectsGrid =
+            document.getElementById("projectsGrid");
+
+        const searchInput =
+            document.getElementById("searchInput");
+
+        const categoryFilter =
+            document.getElementById("categoryFilter");
+
+        const backButton =
+            document.getElementById("backButton");
+
+        const investmentAmount =
+            document.getElementById("investmentAmount");
+
+        const leadForm =
+            document.getElementById("leadForm");
+
+        const leadSubmit =
+            document.getElementById("leadSubmit");
+
+
+        /* ==========================================
+           INICIO
+        =========================================== */
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeMarketplace
         );
 
-    color:white;
 
-    position:relative;
-    overflow:hidden;
-}
+        async function initializeMarketplace() {
 
-.hero.with-image{
-    background-size:cover !important;
-    background-position:center !important;
-}
+            try {
 
-.hero::after{
-    content:"";
-    width:450px;
-    height:450px;
+                await loadSiteSettings();
 
-    border:1px solid rgba(199,169,75,.18);
+                await loadProjects();
 
-    border-radius:50%;
+                await crTrack("page_view");
 
-    position:absolute;
-    right:-150px;
-    top:50px;
-}
+                openProjectFromURL();
 
-.heroContent{
-    max-width:760px;
-    position:relative;
-    z-index:2;
-}
+            } catch (error) {
 
-.kicker{
-    color:var(--gold);
-    font-size:13px;
-    letter-spacing:3px;
-    font-weight:bold;
-}
+                console.error(
+                    "Error inicializando Capital Raíz:",
+                    error
+                );
 
-.hero h1{
-    font-family:Georgia,serif;
+            }
 
-    font-size:60px;
-    line-height:1.08;
+        }
 
-    margin:18px 0;
-}
 
-.hero p{
-    font-size:19px;
-    max-width:650px;
-    line-height:1.75;
-    opacity:.9;
-}
+        /* ==========================================
+           CONFIGURACIÓN DEL SITIO
+        =========================================== */
 
-.primaryBtn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+        async function loadSiteSettings() {
 
-    margin-top:28px;
+            try {
 
-    padding:15px 24px;
+                const {
+                    data,
+                    error
+                } = await db
+                    .from(CR_CONFIG.tables.settings)
+                    .select("*")
+                    .eq("id", 1)
+                    .maybeSingle();
 
-    border-radius:8px;
 
-    border:0;
+                if (error) {
 
-    background:linear-gradient(135deg,#07845f,#0ba372);
+                    console.error(
+                        "Error cargando configuración:",
+                        error
+                    );
 
-    color:white;
+                    return;
+                }
 
-    text-decoration:none;
 
-    font-weight:bold;
+                if (!data) {
+                    return;
+                }
 
-    cursor:pointer;
-}
 
-/* SECTIONS */
+                if (data.hero_kicker) {
 
-.section{
-    max-width:1450px;
-    margin:auto;
-    padding:75px 6%;
-}
+                    document
+                        .getElementById("heroKicker")
+                        .textContent =
+                        data.hero_kicker;
 
-.sectionTitle small{
-    color:var(--green2);
-    font-weight:bold;
-    letter-spacing:2px;
-}
+                }
 
-.sectionTitle h2{
-    font-family:Georgia,serif;
 
-    font-size:42px;
+                if (data.hero_title) {
 
-    margin-top:8px;
-}
+                    document
+                        .getElementById("heroTitle")
+                        .textContent =
+                        data.hero_title;
 
-.sectionTitle p{
-    color:var(--muted);
+                }
 
-    margin-top:10px;
 
-    max-width:700px;
+                if (data.hero_subtitle) {
 
-    line-height:1.7;
-}
+                    document
+                        .getElementById("heroSubtitle")
+                        .textContent =
+                        data.hero_subtitle;
 
-/* FILTER */
+                }
 
-.filters{
-    margin:35px 0;
 
-    display:grid;
+                if (data.footer_text) {
 
-    grid-template-columns:2fr 1fr;
+                    document
+                        .getElementById("footerText")
+                        .textContent =
+                        data.footer_text;
 
-    gap:15px;
-}
+                }
 
-.filters input,
-.filters select{
 
-    padding:14px;
+                if (data.hero_image_url) {
 
-    border:1px solid #d9dfdc;
+                    const hero =
+                        document.querySelector(".hero");
 
-    border-radius:9px;
+                    hero.style.backgroundImage = `
+                        linear-gradient(
+                            100deg,
+                            rgba(3,47,43,.97),
+                            rgba(3,75,63,.69)
+                        ),
+                        url("${data.hero_image_url}")
+                    `;
 
-    background:white;
-}
+                }
 
-/* GRID */
+            } catch (error) {
 
-.projectsGrid{
-    display:grid;
+                console.error(error);
 
-    grid-template-columns:
-        repeat(auto-fit,minmax(300px,1fr));
+            }
 
-    gap:25px;
-}
+        }
 
-/* CARD */
 
-.projectCard{
-    background:white;
+        /* ==========================================
+           CARGAR PROYECTOS
+        =========================================== */
 
-    border-radius:17px;
+        async function loadProjects() {
 
-    overflow:hidden;
+            projectsGrid.innerHTML = `
+                <div class="empty-state">
+                    <h3>
+                        Cargando oportunidades...
+                    </h3>
+                </div>
+            `;
 
-    box-shadow:
-        0 5px 25px rgba(0,0,0,.07);
 
-    transition:.25s;
-}
+            const {
+                data,
+                error
+            } = await db
+                .from(CR_CONFIG.tables.projects)
+                .select("*")
+                .eq("published", true)
+                .order(
+                    "featured",
+                    {
+                        ascending: false
+                    }
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
 
-.projectCard:hover{
-    transform:translateY(-6px);
 
-    box-shadow:
-        0 16px 40px rgba(0,0,0,.12);
-}
+            if (error) {
 
-.imageArea{
-    width:100%;
-    height:235px;
+                console.error(
+                    "Error obteniendo proyectos:",
+                    error
+                );
 
-    background:#dce3e0;
 
-    position:relative;
+                projectsGrid.innerHTML = `
+                    <div class="empty-state">
 
-    display:flex;
-    align-items:center;
-    justify-content:center;
+                        <h3>
+                            No se pudieron cargar
+                            las oportunidades
+                        </h3>
 
-    color:#79847f;
-}
+                        <p>
+                            Revisa la conexión con Supabase.
+                        </p>
 
-.imageArea img{
-    width:100%;
-    height:100%;
+                    </div>
+                `;
 
-    object-fit:cover;
-}
+                return;
+            }
 
-.badge{
-    position:absolute;
 
-    top:16px;
-    left:16px;
+            allProjects =
+                Array.isArray(data)
+                    ? data
+                    : [];
 
-    padding:7px 12px;
 
-    border-radius:20px;
+            renderProjects(allProjects);
 
-    background:white;
+        }
 
-    font-size:11px;
-    font-weight:bold;
-}
 
-.cardContent{
-    padding:23px;
-}
+        /* ==========================================
+           MOSTRAR PROYECTOS
+        =========================================== */
 
-.city{
-    color:var(--green2);
-    font-size:12px;
-    font-weight:bold;
-    text-transform:uppercase;
-}
+        function renderProjects(projects) {
 
-.cardContent h3{
-    font-family:Georgia,serif;
+            if (!projects.length) {
 
-    font-size:24px;
+                projectsGrid.innerHTML = `
+                    <div class="empty-state">
 
-    margin:8px 0 12px;
-}
+                        <h3>
+                            Todavía no existen
+                            oportunidades publicadas
+                        </h3>
 
-.cardDescription{
-    color:var(--muted);
-    line-height:1.6;
+                        <p>
+                            Los proyectos aparecerán
+                            automáticamente aquí cuando
+                            sean creados y publicados
+                            desde el administrador.
+                        </p>
 
-    min-height:50px;
-}
+                    </div>
+                `;
 
-.stats{
-    display:grid;
+                return;
+            }
 
-    grid-template-columns:
-        repeat(2,1fr);
 
-    gap:10px;
+            projectsGrid.innerHTML =
+                projects
+                    .map(createProjectCard)
+                    .join("");
 
-    margin-top:20px;
-}
+        }
 
-.stat{
-    background:#f7f9f8;
 
-    border:1px solid #edf0ef;
+        function createProjectCard(project) {
 
-    padding:12px;
+            const images =
+                Array.isArray(project.images)
+                    ? project.images.filter(Boolean)
+                    : [];
 
-    border-radius:9px;
-}
 
-.stat small{
-    color:#7a8581;
-    display:block;
-    font-size:11px;
-}
+            const cover =
+                images.length
+                    ? images[0]
+                    : null;
 
-.stat strong{
-    display:block;
-    margin-top:4px;
-}
 
-.cardButton{
-    width:100%;
+            const total =
+                Number(
+                    project.total_investment || 0
+                );
 
-    padding:13px;
 
-    margin-top:20px;
+            const raised =
+                Number(
+                    project.amount_raised || 0
+                );
 
-    background:var(--green);
 
-    border:0;
+            const available =
+                Math.max(
+                    0,
+                    total - raised
+                );
 
-    border-radius:8px;
 
-    color:white;
+            return `
 
-    cursor:pointer;
-}
+                <article class="project-card">
 
-/* EMPTY */
+                    <div class="project-image">
 
-.empty{
-    grid-column:1/-1;
+                        ${
+                            cover
+                                ? `
+                                    <img
+                                        src="${crEscape(cover)}"
+                                        alt="${crEscape(project.title || "Proyecto")}"
+                                        loading="lazy"
+                                    >
+                                `
+                                : `
+                                    <span>
+                                        Sin imagen
+                                    </span>
+                                `
+                        }
 
-    padding:80px 30px;
+                        ${
+                            project.featured
+                                ? `
+                                    <div class="project-badge">
+                                        ★ Destacado
+                                    </div>
+                                `
+                                : ""
+                        }
 
-    border:2px dashed #d3dbd7;
+                    </div>
 
-    background:white;
 
-    border-radius:15px;
+                    <div class="project-content">
 
-    text-align:center;
+                        <div class="project-city">
+                            ${crEscape(project.city || "")}
+                        </div>
 
-    color:var(--muted);
-}
+                        <h3>
+                            ${crEscape(project.title || "")}
+                        </h3>
 
-.empty h3{
-    color:var(--green);
-    margin-bottom:10px;
-}
+                        <p class="project-description">
+                            ${crEscape(
+                                project.short_description
+                                ||
+                                project.description
+                                ||
+                                ""
+                            )}
+                        </p>
 
-/* DETAIL */
 
-#projectView{
-    display:none;
-}
+                        <div class="project-stats">
 
-.backButton{
-    border:0;
-    background:none;
+                            <div class="project-stat">
 
-    color:var(--green2);
+                                <small>
+                                    Inversión mínima
+                                </small>
 
-    font-weight:bold;
-    cursor:pointer;
+                                <strong>
+                                    ${crMoney(project.min_investment)}
+                                </strong>
 
-    margin-bottom:25px;
-}
+                            </div>
 
-.detailGrid{
-    display:grid;
 
-    grid-template-columns:
-        1.35fr .8fr;
+                            <div class="project-stat">
 
-    gap:30px;
-}
+                                <small>
+                                    Rentabilidad
+                                </small>
 
-.detailMain,
-.detailSide{
-    background:white;
+                                <strong>
+                                    ${crPercent(project.return_rate)}
+                                </strong>
 
-    border-radius:18px;
+                            </div>
 
-    padding:28px;
 
-    box-shadow:
-        0 5px 25px rgba(0,0,0,.
+                            <div class="project-stat">
+
+                                <small>
+                                    Plazo
+                                </small>
+
+                                <strong>
+                                    ${Number(project.term_months || 0)}
+                                    meses
+                                </strong>
+
+                            </div>
+
+
+                            <div class="project-stat">
+
+                                <small>
+                                    Disponible
+                                </small>
+
+                                <strong>
+                                    ${crMoney(available)}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="view-button"
+                            type="button"
+                            data-project="${project.id}"
+                        >
+                            Ver proyecto
+                        </button>
+
+                    </div>
+
+                </article>
+            `;
+
+        }
+
+
+        /* ==========================================
+           EVENTOS DE TARJETAS
+        =========================================== */
+
+        projectsGrid.addEventListener(
+            "click",
+            function(event) {
+
+                const button =
+                    event.target.closest(
+                        "[data-project]"
+                    );
+
+
+                if (!button) {
+                    return;
+                }
+
+
+                openProject(
+                    button.dataset.project
+                );
+
+            }
+        );
+
+
+        /* ==========================================
+           FILTRAR
+        =========================================== */
+
+        searchInput.addEventListener(
+            "input",
+            filterProjects
+        );
+
+
+        categoryFilter.addEventListener(
+            "change",
+            filterProjects
+        );
+
+
+        function filterProjects() {
+
+            const search =
+                searchInput
+                    .value
+                    .trim()
+                    .toLowerCase();
+
+
+            const category =
+                categoryFilter.value;
+
+
+            const filtered =
+                allProjects.filter(
+                    function(project) {
+
+                        const searchableText = `
+                            ${project.title || ""}
+                            ${project.city || ""}
+                            ${project.category || ""}
+                            ${project.short_description || ""}
+                            ${project.description || ""}
+                        `
+                        .toLowerCase();
+
+
+                        const searchOK =
+                            !search
+                            ||
+                            searchableText.includes(
+                                search
+                            );
+
+
+                        const categoryOK =
+                            !category
+                            ||
+                            project.category === category;
+
+
+                        return (
+                            searchOK
+                            &&
+                            categoryOK
+                        );
+
+                    }
+                );
+
+
+            renderProjects(filtered);
+
+        }
+
+
+        /* ==========================================
+           ABRIR PROYECTO
+        =========================================== */
+
+        function openProject(
+            projectId,
+            changeURL = true
+        ) {
+
+            const project =
+                allProjects.find(
+                    function(item) {
+                        return item.id === projectId;
+                    }
+                );
+
+
+            if (!project) {
+
+                showToast(
+                    "No encontramos este proyecto."
+                );
+
+                return;
+            }
+
+
+            currentProject =
+                project;
+
+
+            if (changeURL) {
+
+                history.pushState(
+                    {},
+                    "",
+                    "#proyecto=" + project.id
+                );
+
+            }
+
+
+            homeView.style.display =
+                "none";
+
+
+            projectView.style.display =
+                "block";
+
+
+            renderProjectDetail(
+                project
+            );
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+
+            crTrack(
+                "project_view",
+                project.id
+            );
+
+        }
+
+
+        /* ==========================================
+           DETALLE
+        =========================================== */
+
+        function renderProjectDetail(project) {
+
+            const images =
+                Array.isArray(project.images)
+                    ? project.images.filter(Boolean)
+                    : [];
+
+
+            const mainImageHolder =
+                document.getElementById(
+                    "mainImageHolder"
+                );
+
+
+            const gallery =
+                document.getElementById(
+                    "gallery"
+                );
+
+
+            if (images.length) {
+
+                mainImageHolder.innerHTML = `
+                    <img
+                        class="main-project-image"
+                        id="detailMainImage"
+                        src="${crEscape(images[0])}"
+                        alt="${crEscape(project.title || "Proyecto")}"
+                    >
+                `;
+
+
+                gallery.innerHTML =
+                    images
+                        .map(
+                            function(image) {
+
+                                return `
+                                    <img
+                                        src="${crEscape(image)}"
+                                        data-gallery-image="${crEscape(image)}"
+                                        alt="Imagen del proyecto"
+                                    >
+                                `;
+
+                            }
+                        )
+                        .join("");
+
+            } else {
+
+                mainImageHolder.innerHTML = `
+                    <div class="no-main-image">
+                        Sin imágenes cargadas
+                    </div>
+                `;
+
+
+                gallery.innerHTML = "";
+
+            }
+
+
+            document
+                .getElementById("detailCity")
+                .textContent =
+                project.city || "";
+
+
+            document
+                .getElementById("detailTitle")
+                .textContent =
+                project.title || "";
+
+
+            document
+                .getElementById("detailDescription")
+                .textContent =
+                project.description
+                ||
+                project.short_description
+                ||
+                "";
+
+
+            const total =
+                Number(
+                    project.total_investment || 0
+                );
+
+
+            const sale =
+                Number(
+                    project.projected_sale || 0
+                );
+
+
+            const raised =
+                Number(
+                    project.amount_raised || 0
+                );
+
+
+            const available =
+                Math.max(
+                    0,
+                    total - raised
+                );
+
+
+            document
+                .getElementById("detailInvestment")
+                .textContent =
+                crMoney(total);
+
+
+            document
+                .getElementById("detailSale")
+                .textContent =
+                crMoney(sale);
+
+
+            document
+                .getElementById("detailRaised")
+                .textContent =
+                crMoney(raised);
+
+
+            document
+                .getElementById("detailAvailable")
+                .textContent =
+                crMoney(available);
+
+
+            document
+                .getElementById("detailReturn")
+                .textContent =
+                crPercent(project.return_rate);
+
+
+            document
+                .getElementById("detailTerm")
+                .textContent =
+                `${Number(
+                    project.term_months || 0
+                )} meses`;
+
+
+            const progress =
+                Math.min(
+                    100,
+                    Math.max(
+                        0,
+                        Number(
+                            project.progress || 0
+                        )
+                    )
+                );
+
+
+            document
+                .getElementById("detailProgress")
+                .textContent =
+                crPercent(progress);
+
+
+            document
+                .getElementById("detailProgressBar")
+                .style.width =
+                `${progress}%`;
+
+
+            configureSimulator(
+                project
+            );
+
+        }
+
+
+        /* ==========================================
+           GALERÍA
+        =========================================== */
+
+        document
+            .getElementById("gallery")
+            .addEventListener(
+                "click",
+                function(event) {
+
+                    const image =
+                        event.target.closest(
+                            "[data-gallery-image]"
+                        );
+
+
+                    if (!image) {
+                        return;
+                    }
+
+
+                    const mainImage =
+                        document.getElementById(
+                            "detailMainImage"
+                        );
+
+
+                    if (mainImage) {
+
+                        mainImage.src =
+                            image.dataset.galleryImage;
+
+                    }
+
+                }
+            );
+
+
+        /* ==========================================
+           SIMULADOR
+        =========================================== */
+
+        investmentAmount.addEventListener(
+            "input",
+            calculateInvestment
+        );
+
+
+        function configureSimulator(project) {
+
+            const total =
+                Number(
+                    project.total_investment || 0
+                );
+
+
+            const raised =
+                Number(
+                    project.amount_raised || 0
+                );
+
+
+            const available =
+                Math.max(
+                    0,
+                    total - raised
+                );
+
+
+            const minimum =
+                Math.max(
+                    0,
+                    Number(
+                        project.min_investment || 0
+                    )
+                );
+
+
+            const configuredMax =
+                Number(
+                    project.max_investment || 0
+                );
+
+
+            const maximum =
+                configuredMax > 0
+                    ? Math.min(
+                        configuredMax,
+                        available
+                    )
+                    : available;
+
+
+            investmentAmount.min =
+                minimum;
+
+
+            investmentAmount.max =
+                maximum;
+
+
+            if (
+                available <= 0
+                ||
+                maximum <= 0
+            ) {
+
+                investmentAmount.value = 0;
+                investmentAmount.disabled = true;
+
+                leadSubmit.disabled = true;
+
+                document
+                    .getElementById("simulationHelp")
+                    .textContent =
+                    "Este proyecto actualmente no tiene capital disponible.";
+
+            } else {
+
+                investmentAmount.disabled = false;
+                leadSubmit.disabled = false;
+
+
+                const initialAmount =
+                    minimum <= maximum
+                        ? minimum
+                        : maximum;
+
+
+                investmentAmount.value =
+                    initialAmount;
+
+
+                document
+                    .getElementById("simulationHelp")
+                    .textContent =
+                    `Disponible: ${crMoney(available)} · Máximo permitido: ${crMoney(maximum)}`;
+
+            }
+
+
+            calculateInvestment();
+
+        }
+
+
+        function calculateInvestment() {
+
+            if (!currentProject) {
+                return;
+            }
+
+
+            const total =
+                Number(
+                    currentProject.total_investment || 0
+                );
+
+
+            const raised =
+                Number(
+                    currentProject.amount_raised || 0
+                );
+
+
+            const available =
+                Math.max(
+                    0,
+                    total - raised
+                );
+
+
+            const configuredMax =
+                Number(
+                    currentProject.max_investment || 0
+                );
+
+
+            const maximum =
+                configuredMax > 0
+                    ? Math.min(
+                        configuredMax,
+                        available
+                    )
+                    : available;
+
+
+            let amount =
+                Number(
+                    investmentAmount.value || 0
+                );
+
+
+            if (amount < 0) {
+                amount = 0;
+            }
+
+
+            if (amount > maximum) {
+
+                amount = maximum;
+
+                investmentAmount.value =
+                    maximum;
+
+            }
+
+
+            const returnRate =
+                Number(
+                    currentProject.return_rate || 0
+                );
+
+
+            const participation =
+                total > 0
+                    ? (
+                        amount / total
+                    ) * 100
+                    : 0;
+
+
+            const profit =
+                amount
+                *
+                (
+                    returnRate / 100
+                );
+
+
+            const projectedTotal =
+                amount + profit;
+
+
+            document
+                .getElementById("calcParticipation")
+                .textContent =
+                crPercent(participation);
+
+
+            document
+                .getElementById("calcProfit")
+                .textContent =
+                crMoney(profit);
+
+
+            document
+                .getElementById("calcTotal")
+                .textContent =
+                crMoney(projectedTotal);
+
+
+            document
+                .getElementById("calcTerm")
+                .textContent =
+                `${Number(
+                    currentProject.term_months || 0
+                )} meses`;
+
+        }
+
+
+        /* ==========================================
+           SOLICITUD
+        =========================================== */
+
+        leadForm.addEventListener(
+            "submit",
+            submitLead
+        );
+
+
+        async function submitLead(event) {
+
+            event.preventDefault();
+
+
+            if (!currentProject) {
+
+                showToast(
+                    "Selecciona un proyecto."
+                );
+
+                return;
+            }
+
+
+            const amount =
+                Number(
+                    investmentAmount.value || 0
+                );
+
+
+            const minimum =
+                Number(
+                    currentProject.min_investment || 0
+                );
+
+
+            const total =
+                Number(
+                    currentProject.total_investment || 0
+                );
+
+
+            const raised =
+                Number(
+                    currentProject.amount_raised || 0
+                );
+
+
+            const available =
+                Math.max(
+                    0,
+                    total - raised
+                );
+
+
+            const configuredMax =
+                Number(
+                    currentProject.max_investment || 0
+                );
+
+
+            const maximum =
+                configuredMax > 0
+                    ? Math.min(
+                        configuredMax,
+                        available
+                    )
+                    : available;
+
+
+            if (available <= 0) {
+
+                showToast(
+                    "Este proyecto ya no tiene capital disponible."
+                );
+
+                return;
+            }
+
+
+            if (amount < minimum) {
+
+                showToast(
+                    `La inversión mínima es ${crMoney(minimum)}.`
+                );
+
+                return;
+            }
+
+
+            if (amount > maximum) {
+
+                showToast(
+                    `El máximo permitido es ${crMoney(maximum)}.`
+                );
+
+                return;
+            }
+
+
+            const name =
+                document
+                    .getElementById("leadName")
+                    .value
+                    .trim();
+
+
+            const email =
+                document
+                    .getElementById("leadEmail")
+                    .value
+                    .trim();
+
+
+            const phone =
+                document
+                    .getElementById("leadPhone")
+                    .value
+                    .trim();
+
+
+            const message =
+                document
+                    .getElementById("leadMessage")
+                    .value
+                    .trim();
+
+
+            leadSubmit.disabled = true;
+
+            leadSubmit.textContent =
+                "Enviando...";
+
+
+            try {
+
+                const {
+                    error
+                } = await db
+                    .from(CR_CONFIG.tables.leads)
+                    .insert({
+
+                        project_id:
+                            currentProject.id,
+
+                        name: name,
+
+                        email: email,
+
+                        phone:
+                            phone || null,
+
+                        message:
+                            message || null,
+
+                        investment_amount:
+                            amount,
+
+                        status:
+                            "Nueva"
+
+                    });
+
+
+                if (error) {
+
+                    console.error(
+                        "Error enviando solicitud:",
+                        error
+                    );
+
+                    showToast(
+                        "No fue posible enviar la solicitud."
+                    );
+
+                    return;
+                }
+
+
+                await crTrack(
+                    "lead_submit",
+                    currentProject.id
+                );
+
+
+                showToast(
+                    "Solicitud enviada correctamente."
+                );
+
+
+                leadForm.reset();
+
+
+                configureSimulator(
+                    currentProject
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                showToast(
+                    "Ocurrió un error inesperado."
+                );
+
+            } finally {
+
+                leadSubmit.disabled =
+                    false;
+
+                leadSubmit.textContent =
+                    "Enviar solicitud";
+
+            }
+
+        }
+
+
+        /* ==========================================
+           VOLVER
+        =========================================== */
+
+        backButton.addEventListener(
+            "click",
+            goBack
+        );
+
+
+        function goBack() {
+
+            currentProject = null;
+
+
+            projectView.style.display =
+                "none";
+
+
+            homeView.style.display =
+                "block";
+
+
+            history.pushState(
+                {},
+                "",
+                "#oportunidades"
+            );
+
+
+            setTimeout(
+                function() {
+
+                    document
+                        .getElementById(
+                            "oportunidades"
+                        )
+                        .scrollIntoView({
+                            behavior: "smooth"
+                        });
+
+                },
+                50
+            );
+
+        }
+
+
+        /* ==========================================
+           URL
+        =========================================== */
+
+        function openProjectFromURL() {
+
+            if (
+                !window.location.hash.startsWith(
+                    "#proyecto="
+                )
+            ) {
+                return;
+            }
+
+
+            const id =
+                window.location.hash.replace(
+                    "#proyecto=",
+                    ""
+                );
+
+
+            openProject(
+                id,
+                false
+            );
+
+        }
+
+
+        window.addEventListener(
+            "popstate",
+            function() {
+
+                if (
+                    window.location.hash.startsWith(
+                        "#proyecto="
+                    )
+                ) {
+
+                    openProjectFromURL();
+
+                } else {
+
+                    projectView.style.display =
+                        "none";
+
+
+                    homeView.style.display =
+                        "block";
+
+
+                    currentProject = null;
+
+                }
+
+            }
+        );
+
+
+        /* ==========================================
+           TOAST
+        =========================================== */
+
+        function showToast(message) {
+
+            const toast =
+                document.getElementById(
+                    "toast"
+                );
+
+
+            toast.textContent =
+                message;
+
+
+            toast.style.display =
+                "block";
+
+
+            clearTimeout(
+                window.crToastTimer
+            );
+
+
+            window.crToastTimer =
+                setTimeout(
+                    function() {
+
+                        toast.style.display =
+                            "none";
+
+                    },
+                    3200
+                );
+
+        }
+
+    </script>
+
+</body>
+
+</html>
