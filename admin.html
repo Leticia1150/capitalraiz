@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Capital Raíz | Administración</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="admin-body">
+<div class="admin-login" id="adminLogin">
+  <section class="login-card">
+    <div class="login-brand"><a class="brand" id="loginBrand" href="index.html"></a></div>
+    <h1>Panel administrativo</h1>
+    <p>Acceso exclusivo para usuarios autorizados en Supabase Auth.</p>
+    <form class="login-form" id="loginForm">
+      <label class="field"><span>Correo electrónico</span><input required type="email" id="loginEmail" autocomplete="username"></label>
+      <label class="field"><span>Contraseña</span><input required type="password" id="loginPassword" autocomplete="current-password"></label>
+      <button class="button button-primary button-full" id="loginSubmit" type="submit">Ingresar</button>
+    </form>
+    <div class="setup-alert hidden" id="adminSetupNotice"></div>
+  </section>
+</div>
+
+<div class="admin-app hidden" id="adminApp">
+  <aside class="admin-sidebar">
+    <a class="brand" id="adminBrand" href="index.html"></a>
+    <nav class="admin-nav">
+      <button class="is-active" data-admin-tab="overview"><b>⌂</b><span>Resumen</span></button>
+      <button data-admin-tab="projects"><b>▦</b><span>Proyectos</span></button>
+      <button data-admin-tab="requests"><b>✉</b><span>Solicitudes</span></button>
+      <button data-admin-tab="analytics"><b>↗</b><span>Analítica</span></button>
+      <button data-admin-tab="site"><b>⚙</b><span>Sitio</span></button>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <div class="admin-user"><strong id="adminUserName">Administrador</strong><small id="adminUserEmail"></small></div>
+      <a class="button button-secondary button-small button-full" href="index.html" target="_blank"><span>Ver marketplace</span> ↗</a>
+      <button class="button button-ghost button-small button-full" id="logoutButton" style="margin-top:7px;color:white;border-color:rgba(255,255,255,.2)"><span>Cerrar sesión</span></button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div><h1 id="adminPageTitle">Resumen</h1><p id="adminPageSubtitle">Estado general del marketplace.</p></div>
+      <button class="button button-primary hidden" id="newProjectButton">+ Nuevo proyecto</button>
+    </header>
+
+    <section class="admin-panel is-active" data-panel="overview">
+      <div class="kpi-grid">
+        <article class="kpi-card"><span>Vistas · 30 días</span><strong id="kpiViews">0</strong><small>Page views registradas</small></article>
+        <article class="kpi-card"><span>Visitantes</span><strong id="kpiVisitors">0</strong><small>Visitantes únicos</small></article>
+        <article class="kpi-card"><span>Proyectos publicados</span><strong id="kpiProjects">0</strong><small>Visibles en marketplace</small></article>
+        <article class="kpi-card"><span>Solicitudes</span><strong id="kpiRequests">0</strong><small>Intereses recibidos</small></article>
+        <article class="kpi-card"><span>Conversión</span><strong id="kpiConversion">0%</strong><small>Solicitudes / vistas de proyecto</small></article>
+      </div>
+      <div class="admin-grid-2">
+        <article class="admin-card"><div class="admin-card-header"><div><h2>Tráfico de los últimos 30 días</h2><p>Vistas y visitantes únicos por día.</p></div></div><div class="chart-wrap"><canvas id="overviewChart"></canvas></div></article>
+        <article class="admin-card"><div class="admin-card-header"><div><h2>Proyectos más vistos</h2><p>Según eventos de ficha de proyecto.</p></div></div><div class="breakdown-list" id="overviewTopProjects"></div></article>
+      </div>
+      <div class="admin-grid-2">
+        <article class="admin-card"><div class="admin-card-header"><div><h2>Solicitudes recientes</h2><p>Últimos inversionistas interesados.</p></div><button class="button button-secondary button-small" data-admin-jump="requests">Ver todas</button></div><div class="table-wrap"><table class="admin-table"><thead><tr><th>Inversionista</th><th>Proyecto</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="overviewRequestsBody"></tbody></table></div></article>
+        <article class="admin-card"><div class="admin-card-header"><div><h2>Origen del tráfico</h2><p>Fuente principal detectada.</p></div></div><div class="breakdown-list" id="overviewSources"></div></article>
+      </div>
+    </section>
+
+    <section class="admin-panel" data-panel="projects">
+      <div class="toolbar"><div class="toolbar-left"><input id="adminProjectSearch" type="search" placeholder="Buscar proyecto"><select id="adminProjectStatus"><option value="all">Todos</option><option value="published">Publicados</option><option value="draft">Borradores</option></select></div><span class="muted" id="adminProjectCount"></span></div>
+      <article class="admin-card"><div class="table-wrap"><table class="admin-table"><thead><tr><th>Proyecto</th><th>Ciudad</th><th>Inversión</th><th>Captado</th><th>Publicación</th><th>Acciones</th></tr></thead><tbody id="projectsTableBody"></tbody></table></div><div class="admin-empty hidden" id="projectsEmpty">No existen proyectos. Crea el primero con “Nuevo proyecto”.</div></article>
+    </section>
+
+    <section class="admin-panel" data-panel="requests">
+      <div class="toolbar"><div class="toolbar-left"><select id="requestStatusFilter"><option value="all">Todos los estados</option><option value="new">Nuevas</option><option value="contacted">Contactadas</option><option value="qualified">Calificadas</option><option value="closed">Cerradas</option><option value="rejected">Descartadas</option></select></div><span class="muted" id="requestCount"></span></div>
+      <article class="admin-card"><div class="table-wrap"><table class="admin-table"><thead><tr><th>Fecha</th><th>Inversionista</th><th>Proyecto</th><th>Monto</th><th>Contacto</th><th>Estado</th></tr></thead><tbody id="requestsTableBody"></tbody></table></div><div class="admin-empty hidden" id="requestsEmpty">Todavía no hay solicitudes.</div></article>
+    </section>
+
+    <section class="admin-panel" data-panel="analytics">
+      <div class="toolbar"><div><strong>Analítica de tráfico</strong><div class="muted" style="font-size:10px">Datos reales registrados por Supabase.</div></div><div class="analytics-range"><button data-days="7">7 días</button><button class="is-active" data-days="30">30 días</button><button data-days="90">90 días</button></div></div>
+      <div class="kpi-grid">
+        <article class="kpi-card"><span>Vistas</span><strong id="analyticsViews">0</strong><small>Page views</small></article>
+        <article class="kpi-card"><span>Visitantes</span><strong id="analyticsVisitors">0</strong><small>Usuarios únicos</small></article>
+        <article class="kpi-card"><span>Sesiones</span><strong id="analyticsSessions">0</strong><small>Sesiones detectadas</small></article>
+        <article class="kpi-card"><span>Vistas de proyecto</span><strong id="analyticsProjectViews">0</strong><small>Aperturas de fichas</small></article>
+        <article class="kpi-card"><span>Conversión</span><strong id="analyticsConversion">0%</strong><small>Solicitudes / vistas de proyecto</small></article>
+      </div>
+      <div class="admin-grid-2"><article class="admin-card"><div class="admin-card-header"><div><h2>Evolución diaria</h2><p>Vistas, visitantes y solicitudes.</p></div></div><div class="chart-wrap"><canvas id="analyticsChart"></canvas></div></article><article class="admin-card"><div class="admin-card-header"><div><h2>Dispositivos</h2><p>Tipo de dispositivo detectado.</p></div></div><div class="breakdown-list" id="analyticsDevices"></div></article></div>
+      <div class="admin-grid-2"><article class="admin-card"><div class="admin-card-header"><div><h2>Fuentes</h2><p>Origen del tráfico.</p></div></div><div class="breakdown-list" id="analyticsSources"></div></article><article class="admin-card"><div class="admin-card-header"><div><h2>Proyectos</h2><p>Fichas más consultadas.</p></div></div><div class="breakdown-list" id="analyticsProjects"></div></article></div>
+    </section>
+
+    <section class="admin-panel" data-panel="site">
+      <form class="settings-form" id="siteSettingsForm">
+        <section class="settings-section"><h2>Identidad</h2><div class="form-grid"><label class="field"><span>Nombre principal</span><input name="brand_name" required></label><label class="field"><span>Segundo nombre</span><input name="brand_surname" required></label><label class="field span-2"><span>Etiqueta superior</span><input name="hero_eyebrow"></label><label class="field span-2"><span>Título del inicio</span><input name="hero_title"></label><label class="field span-2"><span>Texto del inicio</span><textarea name="hero_subtitle"></textarea></label></div></section>
+        <section class="settings-section"><h2>Imagen principal</h2><div class="image-upload-zone"><p class="muted">Sube una imagen JPG, PNG o WebP. Recomendado: 1800 × 1000 px.</p><label class="button button-secondary" for="heroImageInput">Seleccionar imagen</label><input id="heroImageInput" type="file" accept="image/jpeg,image/png,image/webp"><div class="image-preview-grid" id="heroImagePreview"></div></div></section>
+        <section class="settings-section"><h2>Contacto</h2><div class="form-grid"><label class="field"><span>Correo</span><input type="email" name="contact_email"></label><label class="field"><span>Teléfono</span><input name="contact_phone"></label></div></section>
+        <button class="button button-primary" type="submit">Guardar configuración</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="projectModal">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+    <header class="modal-header"><h2 id="projectModalTitle">Nuevo proyecto</h2><button class="modal-close" id="closeProjectModal" type="button">×</button></header>
+    <form id="projectForm">
+      <div class="modal-body">
+        <input type="hidden" name="id">
+        <section class="modal-section"><h3>Información general</h3><div class="form-grid">
+          <label class="field span-2"><span>Nombre del proyecto</span><input required name="title"></label>
+          <label class="field"><span>Ciudad</span><input required name="city"></label><label class="field"><span>Categoría</span><input name="category" placeholder="Residencial, comercial…"></label>
+          <label class="field"><span>Estado comercial</span><select name="status"><option>En financiamiento</option><option>Próximamente</option><option>Financiado</option></select></label><label class="field"><span>Riesgo</span><select name="risk"><option>Bajo</option><option selected>Moderado</option><option>Alto</option></select></label>
+          <label class="field"><span>Desarrollador</span><input name="developer"></label><label class="field"><span>Número de unidades</span><input type="number" min="0" name="units"></label>
+          <label class="field span-2"><span>Descripción corta</span><textarea required name="description" maxlength="500"></textarea></label>
+          <label class="field span-2"><span>Descripción ampliada</span><textarea name="long_description" rows="7"></textarea></label>
+        </div></section>
+
+        <section class="modal-section"><h3>Imágenes</h3><div class="image-upload-zone"><p class="muted">Puedes cargar hasta 12 imágenes. La primera será la portada.</p><label class="button button-secondary" for="projectImagesInput">Agregar imágenes</label><input id="projectImagesInput" type="file" multiple accept="image/jpeg,image/png,image/webp"><div class="image-preview-grid" id="projectImagesPreview"></div></div></section>
+
+        <section class="modal-section"><h3>Finanzas y simulador</h3><div class="form-grid">
+          <label class="field"><span>Inversión total</span><input required type="number" min="0" step="100" name="total_investment"></label>
+          <label class="field"><span>Venta proyectada</span><input required type="number" min="0" step="100" name="projected_sale"></label>
+          <label class="field"><span>Capital ya captado</span><input type="number" min="0" step="100" name="funding_raised"></label>
+          <label class="field"><span>Inversión mínima</span><input type="number" min="0" step="100" name="min_investment"></label>
+          <label class="field"><span>Máximo por inversionista</span><input type="number" min="0" step="100" name="max_investment"><small class="field-hint">No puede superar el capital disponible.</small></label>
+          <label class="field"><span>Incremento del simulador</span><input type="number" min="1" step="1" name="investment_step"></label>
+          <label class="field"><span>Plazo estimado (meses)</span><input type="number" min="1" max="120" name="duration_months"></label>
+          <label class="field"><span>Avance de obra (%)</span><input type="number" min="0" max="100" step="1" name="construction_progress"></label>
+          <label class="field"><span>Rentabilidad</span><select name="return_mode"><option value="auto">Automática por margen del proyecto</option><option value="manual">Porcentaje manual para inversionista</option></select></label>
+          <label class="field"><span>Rentabilidad manual (%)</span><input type="number" step="0.01" name="manual_return_pct"></label>
+        </div></section>
+
+        <section class="modal-section"><h3>Cronograma</h3><div class="repeater" id="milestoneRepeater"></div><button class="button button-secondary button-small" id="addMilestone" type="button" style="margin-top:10px">+ Agregar hito</button></section>
+        <section class="modal-section"><h3>Publicación</h3>
+          <div class="switch-row"><div><strong>Proyecto destacado</strong><div class="field-hint">Aparece primero en el catálogo.</div></div><label class="switch"><input type="checkbox" name="featured"><span class="switch-track"></span></label></div>
+          <div class="switch-row"><div><strong>Aceptar nuevas inversiones</strong><div class="field-hint">Habilita simulador y solicitudes.</div></div><label class="switch"><input type="checkbox" name="accepting_investments" checked><span class="switch-track"></span></label></div>
+          <div class="switch-row"><div><strong>Publicado</strong><div class="field-hint">Solo los proyectos publicados son visibles al público.</div></div><label class="switch"><input type="checkbox" name="published"><span class="switch-track"></span></label></div>
+        </section>
+      </div>
+      <footer class="modal-footer"><button class="button button-ghost" id="cancelProject" type="button">Cancelar</button><button class="button button-primary" id="saveProjectButton" type="submit">Guardar proyecto</button></footer>
+    </form>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/shared.js"></script>
+<script src="assets/admin-app.js"></script>
+</body>
+</html>
